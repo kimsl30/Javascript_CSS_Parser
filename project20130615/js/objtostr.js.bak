@@ -1,0 +1,140 @@
+/*
+Object to CSS String (with indent)
+Maybe it's necessary!!
+Almost done!!
+*/
+
+var ObjToStr = function(input){
+	this.result = "";
+	this.depth = 0;
+
+	this.indent = function(depth){
+		result = "";
+		for(var i=0; i<depth; i++){
+			result += "    ";
+		}
+		return result;
+	};
+
+
+	this.importStr = function(imports){
+		for(var key in imports){
+			if(typeof(imports[key]) == "object"){
+				this.importStr(imports[key]);
+			}
+			if(key == "import" && typeof(imports["mediaqueries"]) == "undefined"){
+				this.result += ("@import" + " " + imports[key] + ";\n");
+			}else if(key == "import" && typeof(imports["mediaqueries"]) != "undefined"){
+				this.result += ("@import" + " " + imports[key]);
+			}
+			if(key == "mediaqueries"){
+				this.result += (" " + imports[key] + ";\n");
+			}
+		}
+	};
+
+	this.namespaceStr = function(namespaces){
+		for(var key in namespaces){
+
+			if(typeof(namespaces[key]["prefix"]) != "undefined" && typeof(namespaces[key]["namespace"]) != "undefined"){
+				this.result += ("@namespace" + " " + namespaces[key]["prefix"] + " " + namespaces[key]["namespace"] + ";\n");
+			}else if(typeof(namespaces[key]["prefix"]) == "undefined" && typeof(namespaces[key]["namespace"]) != "undefined"){
+				this.result += ("@namespace" + " " + namespaces[key]["namespace"] + ";\n");
+			}
+			else if(typeof(namespaces[key]) == "object"){
+				this.namespaceStr(namespaces[key]);
+			}
+		}
+	};
+
+	this.styleStr = function(style, depth){
+		this.result += ( this.indent(depth) +style["selector"] + " {\n");
+		for(var key in style["declarations"]){
+			this.result += ( this.indent(depth+1) + key + " : " + style["declarations"][key] + ";\n");
+		}
+		this.result += (this.indent(depth) +"}\n");
+	};
+
+	this.childrenStr = function(children, depth){
+		for(var key in children){
+			this.styleStr(children[key], depth);
+		}
+	};
+
+	this.keyframeStr = function(keyframe, depth){
+		this.result += (this.indent(depth) + keyframe["offset"] + " {\n");
+		for(var key in keyframe["declarations"]){
+			this.result += ( this.indent(depth+1) + key + " : " + keyframe["declarations"][key] + ";\n");
+		}
+		this.result += (this.indent(depth) + "}\n");
+	};
+
+	this.keyframesStr = function(keyframes, depth){
+		for(var key in keyframes){
+			this.keyframeStr(keyframes[key], depth);
+		}
+	};
+
+	this.fontfaceStr = function(fontface, depth){
+		for(var key in fontface["declarations"]){
+			this.result += ( this.indent(depth) + key + " : " + fontface["declarations"][key] + ";\n");
+		}
+	};
+
+	this.pageStr = function(page, depth){
+		for(var key in page["declarations"]){
+			this.result += ( this.indent(depth) + key + " : " + page["declarations"][key] + ";\n");
+		}
+	};
+
+	this.ruleStr = function(rulelist, depth){
+		for(var key in rulelist){
+			if(rulelist[key]["type"] == "media"){ //media
+				this.result += ("@media" + " " + rulelist[key]["mediaqueries"] + " {\n");
+				this.childrenStr(rulelist[key]["children"] , depth+1);
+				this.result += "}\n";
+			}
+			if(rulelist[key]["type"] == "style"){ //style
+				this.styleStr(rulelist[key], depth);
+			}
+			if(rulelist[key]["type"] == "keyframes"){ //keyframes
+				this.result += ("@" + rulelist[key]["prefix"] + "keyframes " + rulelist[key]["id"] + " {\n");
+				this.keyframesStr(rulelist[key]["keyframes"], depth+1);
+				this.result += "}\n";
+			}
+			if(rulelist[key]["type"] == "fontface"){ //fontface
+				this.result += "@font-face {\n";
+				this.fontfaceStr(rulelist[key], depth+1);
+				this.result += "}\n";
+			}
+			if(typeof(rulelist[key]["pseudo"]) != "undefined"){ //page
+				this.result += ("@page " + rulelist[key]["id"]);
+				if(rulelist[key]["pseudo"] != ""){
+					this.result += (rulelist[key]["pseudo"]);
+				}
+				this.result += " {\n";
+				this.pageStr(rulelist[key] , depth+1);
+				this.result += "}\n";
+			}
+		}
+	};
+
+	this.transf = function(input, depth){
+		for(var key in input){
+			if(key == "charset"){ //charset
+				this.result += ("@charset" + " " + input[key] + ";\n");
+			}
+			if(key == "imports"){ //import
+				this.importStr(input[key]);
+			}
+			if(key == "namespaces"){ //namespace
+				this.namespaceStr(input[key]);
+			}
+			if(key == "rulelist"){ //rulelist
+				this.ruleStr(input[key] , depth);
+			}
+		}
+	};
+
+	this.transf(input, this.depth);
+}

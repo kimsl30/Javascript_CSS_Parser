@@ -1,0 +1,248 @@
+<html>
+<head>
+<style>
+fieldset{
+	width:423px;
+	height: 100px;
+	float:left;
+}
+legend{
+	font-weight: bold;
+}
+.pass{
+	border: 1px solid green;
+	border-radius: 3px;
+	background: #cefbc9;
+	padding:3px;
+	font: 15px "Courier New"
+}
+.fail{
+	border: 1px solid red;
+	border-radius: 3px;
+	background: #ffd8d8;
+	padding:3px;
+	font: 15px "gulim"
+}
+#title{
+	font-weight: bold;
+	font-size: 25px;
+	font: "Courier New", "Vrinda";
+	color: 747474;
+}
+.subtitle{
+	font-size: 18px;
+	font-weight: bold;
+	color: 747474;
+	padding-left: 5px;
+}
+.container{
+	width: 910px;
+	float: left;
+}
+#file{
+	margin-left:160px;
+}
+#save{
+	margin-left:405px;
+}
+#buttons{
+	width: 910px;
+	text-align: center;
+	margin-top: 10px;
+	margin-bottom: 30px;
+	float:left;
+}
+#div_tran{
+	line-height: 1.6;
+}
+#div_opt{
+	margin-top:10px;
+	line-height: 1.6;
+}
+</style>
+
+<script src="js/cssparser.js"></script>
+<script src="js/trans.js"></script>
+<script src="js/optimizer.js"></script>
+<script src="js/objtostr.js"></script>
+
+<script>
+var transOption = {			// transform - to add prefix
+	"-ms-" : false,
+	"-moz-" : false,
+	"-webkit-" : false,
+	"-o-" : false
+};
+
+var OptimizeOption = {		// optimization 
+	"color" : false,
+	"font" : false,
+	"padding" : false,
+	"etc" : false
+};
+
+var overOption = false;
+
+var fileName;
+
+var T2option = document.getElementsByName("checkInfo[]");		// browser checkbox - to prevent all not checked!!
+
+window.onload = function () {
+	document.getElementById("val_button").onclick = function () {
+		try {
+			var result = cssparser.parse(document.getElementById("inputView").value);
+            if (result) {
+				document.getElementById("result").innerHTML = "CSS is valid!";
+				document.getElementById("result").className = "pass";
+				var myCss = new ObjToStr(result);
+				document.getElementById("outputView").value = myCss.result;
+			}
+		} catch(e) {
+			document.getElementById("result").innerHTML = e;
+            document.getElementById("result").className = "fail";
+        }
+	};
+	document.getElementById("trans_button").onclick = function () {
+		if(!T2option[0].checked && !T2option[1].checked && !T2option[2].checked && !T2option[3].checked && !T2option[4].checked){
+			alert('select the browser option');
+		} else {
+			var myInput = cssparser.parse(document.getElementById("inputView").value);
+			var myTrans1 = new Transformer(myInput, transOption,overOption);
+			var myCss = new ObjToStr(myInput);
+			document.getElementById("outputView").value= myCss.result;
+		}
+	};
+	document.getElementById("optimize_button").onclick = function () {
+		var myInput = cssparser.parse(document.getElementById("inputView").value);
+		var transOptionimize = new Optimizer(myInput, OptimizeOption);
+		var myCss = new ObjToStr(myInput);
+		document.getElementById("outputView").value= myCss.result;
+	};
+	document.getElementById("transOptimize_button").onclick = function () {
+		if(!T2option[0].checked && !T2option[1].checked && !T2option[2].checked && !T2option[3].checked && !T2option[4].checked){
+			alert('select the browser option');
+		} else {
+			var myInput = cssparser.parse(document.getElementById("inputView").value);
+			var myTrans = new Transformer(myInput, transOption,overOption);
+			var transOptionimize = new Optimizer(myInput, OptimizeOption);
+			var myCss = new ObjToStr(myInput);
+			document.getElementById("outputView").value= myCss.result;
+		}
+	};
+}
+
+function changeOver(value){
+	overOption = value;
+}
+
+function change(obj){
+	if(obj.checked){
+		transOption[obj.value]=true;
+	} else {
+		if(obj.value=="-webkit-" && (document.getElementsByName("checkInfo[]")[1].checked || document.getElementsByName("checkInfo[]")[3].checked)){
+			transOption[obj.value]=true;
+		} else {
+			transOption[obj.value]=false;
+		}
+	}
+	document.getElementById(obj.value).innerHTML = transOption[obj.value];
+}
+
+function changeOpt(obj){
+	if(obj.checked){
+		OptimizeOption[obj.value]=true;
+	} else {
+		OptimizeOption[obj.value]=false;
+	}
+	document.getElementById(obj.value).innerHTML = OptimizeOption[obj.value];
+}
+
+function readFile(){
+	var file = document.getElementById("file").files[0];
+	var reader = new FileReader();	
+
+	reader.onload = function(){
+		var display = document.getElementById("inputView");
+		display.textContent = reader.result;
+	};
+	reader.readAsText(file,"UTF-8");
+	fileName = file.name;
+}
+
+function saveTextAsFile(){
+    var textToWrite = document.getElementById("outputView").value;
+
+	if(textToWrite==""){
+		// do nothing when output value is null or ""
+	} else {
+		var textFileAsBlob = new Blob([textToWrite], {type:'text/css'});
+		var fileNameToSaveAs = "new_"+fileName;
+
+		var downloadLink = document.createElement("a");
+		downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
+		downloadLink.download = fileNameToSaveAs;
+		downloadLink.click(); 
+	}
+}
+function removeaa(){
+	var a = document.getElementById("outputView").value
+	a = a.replace(/^\s*/,'');
+	a = a.replace(/\s*$/,'');
+	alert(a);
+	document.getElementById("outputView").value = a;
+}
+</script>
+</head>
+
+<body>
+<div style="margin:20px;">
+	<p><span id="title">JavaScript Based CSS Parser</span></p>
+	<div class="container">
+		<div id="input" style="float:left;">
+			<span class="subtitle">input area</span><br />
+			<textarea id="inputView" rows="30" cols="61" name="inputView"></textarea><br />
+			<input type="file" id="file"><button onclick="readFile()">Read</button><br />
+		</div>
+
+		<div id="output"  style="float:left;">
+			<span class="subtitle">output area</span><br />
+			<textarea id="outputView" rows="30" cols="61" readonly></textarea><br />
+			<button onclick="saveTextAsFile()" id="save">Save</button><br />
+		</div>
+	</div>
+
+	<div class="container" style="margin-top:10px;">
+		<p id="result"></p>
+		<fieldset>
+			<legend>Transform</legend>
+			<div id="div_tran">
+				1. override option : <input type="radio" name="over" value="true" onclick="changeOver(true);" checked> override&nbsp;
+									 <input type="radio" name="over" value="false" onclick="changeOver(false);"> not-override<br />
+				2. browser option <br />
+				&nbsp;&nbsp;&nbsp;	<input type="checkbox" name="checkInfo[]" value="-ms-" onclick="change(this);">IE &nbsp;
+									<input type="checkbox" name="checkInfo[]" value="-webkit-" onclick="change(this);">chrome &nbsp;
+									<input type="checkbox" name="checkInfo[]" value="-moz-" onclick="change(this);">firefox &nbsp;
+									<input type="checkbox" name="checkInfo[]" value="-webkit-" onclick="change(this);">safari &nbsp;
+									<input type="checkbox" name="checkInfo[]" value="-o-" onclick="change(this);">opera &nbsp;<br />
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Optimization</legend>
+			<div id="div_opt">
+				optimize option<br />
+				<input type="checkbox" name="opt[]" value="color" onclick="changeOpt(this);">color &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="checkbox" name="opt[]" value="font" onclick="changeOpt(this);">font &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="checkbox" name="opt[]" value="padding" onclick="changeOpt(this);">padding&margin &nbsp;&nbsp;&nbsp;&nbsp;<br />
+				<input type="checkbox" name="opt[]" value="etc" onclick="changeOpt(this);">etc &nbsp;&nbsp;&nbsp;&nbsp;
+			</div>
+		</fieldset>
+		<div id="buttons">
+			<input type="button" value="validate" id="val_button">
+			<input type="button" value="transform" id="trans_button">
+			<input type="button" value="optimization" id="optimize_button">
+			<input type="button" value="trans & optimize" id="transOptimize_button">
+		</div>
+	</div>
+</div>
+<input type="button" onclick="removeaa();" value="test">
+</body>
